@@ -393,9 +393,11 @@ def get_minium_score_of_univ(univ: Univ, dictionary: dict[str, str], prov_dict: 
     school_id = univ['school_id']
     try:
         res = requests.get(
-            'https://static-data.gaokao.cn/www/2.0/school/%s/dic/provincescore.json' % school_id)
+            'https://static-data.gaokao.cn/www/2.0/school/%s/dic/provincescore.json' % school_id
+        )
         if res.status_code == 404:
             # 某些学校，如军校，不公开招生，没有元数据可以爬
+            logging.info('该校无信息，已跳过')
             return []
     except requests.exceptions.RequestException:
         raise NetworkException('网络错误')
@@ -442,7 +444,11 @@ def get_enroll_plan_of_majors(univ: Univ, dictionary: dict[str, str], prov_dict:
     school_id = univ['school_id']
     try:
         res = requests.get(
-            'https://static-data.gaokao.cn/www/2.0/school/%s/dic/specialplan.json' % school_id)
+            'https://static-data.gaokao.cn/www/2.0/school/%s/dic/specialplan.json' % school_id
+        )
+        if res.status_code == 404:
+            logging.info('该校无信息，已跳过')
+            return []
     except requests.exceptions.RequestException:
         raise NetworkException('网络错误')
     metadata: MetaEnrollPlan = res.json()['data']
@@ -531,7 +537,11 @@ def get_minium_score_of_majors(univ: Univ, dictionary: dict[str, str], prov_dict
     school_id = univ['school_id']
     try:
         res = requests.get(
-            'https://static-data.gaokao.cn/www/2.0/school/%s/dic/specialplan.json' % school_id)
+            'https://static-data.gaokao.cn/www/2.0/school/%s/dic/specialplan.json' % school_id
+        )
+        if res.status_code == 404:
+            logging.info('该校无信息，已跳过')
+            return []
     except requests.exceptions.RequestException:
         raise NetworkException('网络错误')
     metadata: MetaMiniumScoreForMajors = res.json()['data']
