@@ -11,7 +11,7 @@ import openpyxl
 NO_UNIV_SCORE = False  # 是否不查询分数线
 NO_ENROLL_PLAN = False  # 是否不查询招生计划
 NO_MAJOR_SCORE = False  # 是否不查询专业分数线
-PAGE_RANGE = [1, 4]  # 大学列表页数范围
+PAGE_RANGE = []  # 大学列表页数范围
 YEAR_SINCE = 2020  # 数据起始年份
 QUERY_INTERVAL = 10  # 每次查询的间隔，单位为秒，低于5的值可能导致IP被封
 PROVINCE = '河南'  # 大学所在的省份，可以参考下面的PROVIENCE_DICT填写
