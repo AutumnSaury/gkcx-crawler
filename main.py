@@ -614,7 +614,7 @@ def get_minium_score_of_majors(univ: Univ, dictionary: dict[str, str], prov_dict
 def main():
     try:
         logging.info('开始获取大学列表')
-        univ_list: list[Univ] = get_univ_list('河南')
+        univ_list: list[Univ] = get_univ_list(PROVINCE)
     except NetworkException:
         logging.fatal('获取大学列表时发生网络异常')
         exit(1)
