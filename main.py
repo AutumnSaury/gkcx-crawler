@@ -7,8 +7,8 @@ from typing import TypedDict, Optional, Optional
 import hashlib
 import random
 
-NO_UNIV_SCORE = True  # 是否不查询分数线
-NO_ENROLL_PLAN = True  # 是否不查询招生计划
+NO_UNIV_SCORE = False  # 是否不查询分数线
+NO_ENROLL_PLAN = False  # 是否不查询招生计划
 NO_MAJOR_SCORE = False  # 是否不查询专业分数线
 PAGE_RANGE = []  # 大学列表页数范围
 YEAR_SINCE = 2020  # 数据起始年份
