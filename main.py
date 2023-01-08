@@ -629,7 +629,7 @@ def main():
         exit(1)
 
     wb = openpyxl.Workbook()
-    wb.remove_sheet(wb.active)
+    wb.remove(wb.active)
 
     if not NO_UNIV_SCORE:
         logging.info('开始获取高校各省分数线')
