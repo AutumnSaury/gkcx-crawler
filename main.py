@@ -8,8 +8,8 @@ import hashlib
 import random
 
 NO_UNIV_SCORE = False  # 是否不查询分数线
-NO_ENROLL_PLAN = False  # 是否不查询招生计划
-NO_MAJOR_SCORE = False  # 是否不查询专业分数线
+NO_ENROLL_PLAN = True  # 是否不查询招生计划
+NO_MAJOR_SCORE = True  # 是否不查询专业分数线
 PAGE_RANGE = []  # 大学列表页数范围
 YEAR_SINCE = 2020  # 数据起始年份
 QUERY_INTERVAL = 6  # 每次查询的间隔，单位为秒，低于5的值可能导致IP被封
@@ -392,6 +392,9 @@ def get_minium_score_of_univ(univ: Univ, dictionary: dict[str, str], prov_dict: 
     try:
         res = requests.get(
             'https://static-data.gaokao.cn/www/2.0/school/%s/dic/provincescore.json' % school_id)
+        if res.status_code == 404:
+            # 某些学校，如军校，不公开招生，没有元数据可以爬
+            return []
     except requests.exceptions.RequestException:
         raise NetworkException('网络错误')
     metadata: MetaMiniumScoreForUnivs = res.json()['data']
