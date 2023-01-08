@@ -13,7 +13,7 @@ NO_ENROLL_PLAN = False  # 是否不查询招生计划
 NO_MAJOR_SCORE = False  # 是否不查询专业分数线
 PAGE_RANGE = []  # 大学列表页数范围
 YEAR_SINCE = 2020  # 数据起始年份
-QUERY_INTERVAL = 10  # 每次查询的间隔，单位为秒，低于5的值可能导致IP被封
+QUERY_INTERVAL = 10  # 每次查询的间隔，单位为秒，低于10的值可能导致IP暂时被封
 PROVINCE = '河南'  # 大学所在的省份，可以参考下面的PROVIENCE_DICT填写
 GENERATE_XLSX = True  # 是否生成xlsx文件
 
@@ -60,7 +60,7 @@ REV_PROVIENCE_DICT = {v: k for k, v in PROVIENCE_DICT.items()}
 
 
 def generate_random_hash() -> str:
-    '''生成随机的8位hash'''
+    """生成随机的8位hash"""
     return hashlib.md5(str(random.random()).encode()).hexdigest()[:8]
 
 
@@ -74,7 +74,7 @@ logging.basicConfig(level=logging.INFO,
 
 
 class Univ(TypedDict):
-    '''eol.cn的搜索接口返回的大学信息，这接口设计一言难尽'''
+    """eol.cn的搜索接口返回的大学信息，这接口设计一言难尽"""
     admissions: str
     answerurl: str
     belong: str
@@ -117,174 +117,174 @@ class Univ(TypedDict):
 
 
 class MiniumScoreForUnivs(TypedDict):
-    '''分数线'''
+    """分数线"""
     code: str
-    '''招生代码，不知道这玩意会不会有前导0，就用字符串了'''
+    """招生代码，不知道这玩意会不会有前导0，就用字符串了"""
     name: str
-    '''高校名称'''
+    """高校名称"""
     located_province: str
-    '''高校所在省份'''
+    """高校所在省份"""
     target_province: str
-    '''招生面向省份'''
+    """招生面向省份"""
     major: str
-    '''科类，文科/理科/综合（新高考）'''
+    """科类，文科/理科/综合（新高考）"""
     year: int
-    '''年份'''
+    """年份"""
     enroll_level: str
-    '''录取批次'''
+    """录取批次"""
     enroll_type: str
-    '''招生类型'''
+    """招生类型"""
     minium_score_and_rank: str
-    '''最低分/最低位次'''
+    """最低分/最低位次"""
     prov_minium_score: str
-    '''省控线'''
+    """省控线"""
     major_group: Optional[str]
-    '''专业组，非新高考省份无此值'''
+    """专业组，非新高考省份无此值"""
     major_requirements: Optional[str]
-    '''选科要求，非新高考省份无此值'''
+    """选科要求，非新高考省份无此值"""
 
 
 class EnrollPlan(TypedDict):
-    '''各专业招生计划'''
+    """各专业招生计划"""
     code: str
-    '''招生代码'''
+    """招生代码"""
     name: str
-    '''高校名称'''
+    """高校名称"""
     located_province: str
-    '''高校所在省份'''
+    """高校所在省份"""
     target_province: str
-    '''招生面向省份'''
+    """招生面向省份"""
     year: int
-    '''年份'''
+    """年份"""
     major: str
-    '''科类'''
+    """科类"""
     enroll_level: str
-    '''招生批次'''
+    """招生批次"""
     major_name: str
-    '''招生专业名称'''
+    """招生专业名称"""
     planned_number: int
-    '''计划招生人数'''
+    """计划招生人数"""
     duration: str
-    '''学制'''
+    """学制"""
     tuition: str
-    '''学费'''
+    """学费"""
     major_requirements: Optional[str]
-    '''选科要求'''
+    """选科要求"""
 
 
 class MiniumScoreForMajors(TypedDict):  # Docstring是这么用的吗，写起来好难受（）
-    '''各专业录取分数线'''
+    """各专业录取分数线"""
     code: str
-    '''招生代码'''
+    """招生代码"""
     name: str
-    '''高校名称'''
+    """高校名称"""
     located_province: str
-    '''高校所在省份'''
+    """高校所在省份"""
     target_province: str
-    '''招生面向省份'''
+    """招生面向省份"""
     year: int
-    '''年份'''
+    """年份"""
     major: str
-    '''科类'''
+    """科类"""
     major_name: str
-    '''招生专业名称'''
+    """招生专业名称"""
     enroll_level: str
-    '''招生批次'''
+    """招生批次"""
     avg_score: str
-    '''平均分'''
+    """平均分"""
     minium_score_and_rank: str
-    '''最低分/最低位次'''
+    """最低分/最低位次"""
     major_requirements: Optional[str]
-    '''选科要求，非新高考省份无此值'''
+    """选科要求，非新高考省份无此值"""
 
 
 # region 接口返回的元数据
 
 
 class MetaProvinceScoreNewsdata(TypedDict):
-    '''分数线元数据接口返回的newsdata字段'''
+    """分数线元数据接口返回的newsdata字段"""
     province: list[int]
-    '''排序过的省份ID'''
+    """排序过的省份ID"""
     type: dict[str, list[int]]
-    '''各省各年份科类，键名格式为省份ID_四位年份，如41_2022'''
+    """各省各年份科类，键名格式为省份ID_四位年份，如41_2022"""
     year: dict[str, list[int]]
-    '''各省招生年份，键名即省份ID'''
+    """各省招生年份，键名即省份ID"""
 
 
 class MetaMiniumScoreForUnivs(TypedDict):
-    '''分数线元数据'''
+    """分数线元数据"""
     data: dict
-    '''看起来不怎么有用的元数据'''
+    """看起来不怎么有用的元数据"""
     newsdata: MetaProvinceScoreNewsdata
-    '''可能比较有用的元数据'''
+    """可能比较有用的元数据"""
     pids: list[int]
-    '''排序过的省份ID'''
+    """排序过的省份ID"""
     year: list[int]
-    '''年份列表'''
+    """年份列表"""
 
 
 class MetaSpecialPlanNewsdata(TypedDict):
-    '''招生计划元数据接口返回的newsdata字段'''
+    """招生计划元数据接口返回的newsdata字段"""
     batch: dict[str, list[int]]
-    '''各省各年份各科类招生批次，键名格式为省份ID_四位年份_科类，如41_2022_1'''
+    """各省各年份各科类招生批次，键名格式为省份ID_四位年份_科类，如41_2022_1"""
     group: dict[str, list[dict]]
-    '''各省各年份各科类专业组，不重要'''
+    """各省各年份各科类专业组，不重要"""
     groups: dict[str, list[dict]]
-    '''各省各年份各科类各招生批次专业组，不重要'''
+    """各省各年份各科类各招生批次专业组，不重要"""
     province: list[int]
-    '''排序过的省份ID'''
+    """排序过的省份ID"""
     type: dict[str, list[int]]
-    '''各省各年份科类，键名格式为省份ID_四位年份，如41_2022'''
+    """各省各年份科类，键名格式为省份ID_四位年份，如41_2022"""
     year: dict[str, list[int]]
-    '''各省招生年份，键名即省份ID'''
+    """各省招生年份，键名即省份ID"""
 
 
 class MetaEnrollPlan(TypedDict):
-    '''招生计划元数据'''
+    """招生计划元数据"""
     newsdata: MetaSpecialPlanNewsdata
-    '''可能比较有用的元数据'''
+    """可能比较有用的元数据"""
     pids: list[int]
-    '''排序过的省份ID'''
+    """排序过的省份ID"""
     year: list[int]
-    '''年份列表'''
+    """年份列表"""
 
 
 class MetaSpecialScoreNewsdata(TypedDict):
-    '''专业分数线元数据接口返回的newsdata字段'''
+    """专业分数线元数据接口返回的newsdata字段"""
     batch: dict[str, list[int]]
-    '''各省各年份各科类招生批次，键名格式为省份ID_四位年份_科类，如41_2022_1'''
+    """各省各年份各科类招生批次，键名格式为省份ID_四位年份_科类，如41_2022_1"""
     group: dict[str, list[dict]]
-    '''各省各年份各科类专业组，不重要'''
+    """各省各年份各科类专业组，不重要"""
     groups: dict[str, list[dict]]
-    '''各省各年份各科类各招生批次专业组，不重要'''
+    """各省各年份各科类各招生批次专业组，不重要"""
     province: list[int]
-    '''排序过的省份ID'''
+    """排序过的省份ID"""
     type: dict[str, list[int]]
-    '''各省各年份科类，键名格式为省份ID_四位年份，如41_2022'''
+    """各省各年份科类，键名格式为省份ID_四位年份，如41_2022"""
     year: dict[str, list[int]]
-    '''各省招生年份，键名即省份ID'''
+    """各省招生年份，键名即省份ID"""
 
 
 class MetaMiniumScoreForMajors(TypedDict):
-    '''专业分数线元数据'''
+    """专业分数线元数据"""
     newsdata: MetaSpecialScoreNewsdata
-    '''可能比较有用的元数据'''
+    """可能比较有用的元数据"""
     pids: list[int]
-    '''排序过的省份ID'''
+    """排序过的省份ID"""
     year: list[int]
-    '''年份列表'''
+    """年份列表"""
 # endregion
 
 # endregion
 
 
 class NetworkException(Exception):
-    '''发生网络错误时抛的异常'''
+    """发生网络错误时抛的异常"""
     pass
 
 
 def load_dictionary() -> dict[str, str]:
-    '''加载用于渲染表格的字典'''
+    """加载用于渲染表格的字典"""
     try:
         res = requests.get(
             'https://static-data.gaokao.cn/www/2.0/config/dicprovince/dic.json')
@@ -310,7 +310,7 @@ def query_with_retry(url: str, headers: dict, json: dict, retry_interval=120) ->
 
 
 def get_univ_list(prov: str, rev_prov_dict: dict[str, int] = REV_PROVIENCE_DICT) -> list[Univ]:
-    '''Get the list of universities in a province.
+    """Get the list of universities in a province.
 
     Args:
         prov (str): Name of the province, e.g. '河南'
@@ -323,7 +323,7 @@ def get_univ_list(prov: str, rev_prov_dict: dict[str, int] = REV_PROVIENCE_DICT)
         NetworkException: If the request fails.
 
     生成Docstring的插件只提供了英文模板，那我就写英文了
-    '''
+    """
     prov_id: int = rev_prov_dict[prov]
     try:
         preflight_res = query_with_retry(
@@ -389,7 +389,7 @@ def get_univ_list(prov: str, rev_prov_dict: dict[str, int] = REV_PROVIENCE_DICT)
 
 
 def get_minium_score_of_univ(univ: Univ, dictionary: dict[str, str], prov_dict: dict[int, str] = PROVIENCE_DICT) -> list[MiniumScoreForUnivs]:
-    '''获取高校各省各年份分数线'''
+    """获取高校各省各年份分数线"""
     school_id = univ['school_id']
     try:
         res = requests.get(
@@ -438,7 +438,7 @@ def get_minium_score_of_univ(univ: Univ, dictionary: dict[str, str], prov_dict: 
 
 
 def get_enroll_plan_of_majors(univ: Univ, dictionary: dict[str, str], prov_dict: dict[int, str] = PROVIENCE_DICT) -> list[EnrollPlan]:
-    '''获取高校招生计划'''
+    """获取高校招生计划"""
     school_id = univ['school_id']
     try:
         res = requests.get(
@@ -527,7 +527,7 @@ def get_enroll_plan_of_majors(univ: Univ, dictionary: dict[str, str], prov_dict:
 
 
 def get_minium_score_of_majors(univ: Univ, dictionary: dict[str, str], prov_dict: dict[int, str] = PROVIENCE_DICT) -> list[MiniumScoreForMajors]:
-    '''获取高校专业分数线'''
+    """获取高校专业分数线"""
     school_id = univ['school_id']
     try:
         res = requests.get(
