@@ -665,7 +665,8 @@ def main():
                     csvwriter.writerow(score)
                     if GENERATE_XLSX:
                         wb['学校分数线'].append([v for v in score.values()])
-                wb.save('data_%s.xlsx' % HASH)
+                if GENERATE_XLSX:
+                    wb.save('data_%s.xlsx' % HASH)
                 logging.info('成功获取%s分数线信息' % univ['name'])
         logging.info('已获取全部高校分数线信息')
 
@@ -703,7 +704,8 @@ def main():
                     csvwriter.writerow(plan)
                     if GENERATE_XLSX:
                         wb['各专业招生计划'].append([v for v in plan.values()])
-                wb.save('data_%s.xlsx' % HASH)
+                if GENERATE_XLSX:
+                    wb.save('data_%s.xlsx' % HASH)
                 logging.info('成功获取%s招生计划信息' % univ['name'])
         logging.info('已获取全部高校招生计划信息')
 
@@ -738,7 +740,8 @@ def main():
                 for score in major_score:
                     csvwriter.writerow(score)
                     wb['分专业录取分数线'].append([v for v in score.values()])
-                wb.save('data_%s.xlsx' % HASH)
+                if GENERATE_XLSX:
+                    wb.save('data_%s.xlsx' % HASH)
                 logging.info('成功获取%s各专业分数线信息' % univ['name'])
         logging.info('已获取全部高校各专业分数线信息')
 
