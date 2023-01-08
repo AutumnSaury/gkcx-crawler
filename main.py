@@ -6,14 +6,16 @@ import time
 from typing import TypedDict, Optional, Optional
 import hashlib
 import random
+import openpyxl
 
 NO_UNIV_SCORE = False  # 是否不查询分数线
-NO_ENROLL_PLAN = True  # 是否不查询招生计划
-NO_MAJOR_SCORE = True  # 是否不查询专业分数线
-PAGE_RANGE = []  # 大学列表页数范围
+NO_ENROLL_PLAN = False  # 是否不查询招生计划
+NO_MAJOR_SCORE = False  # 是否不查询专业分数线
+PAGE_RANGE = [1, 4]  # 大学列表页数范围
 YEAR_SINCE = 2020  # 数据起始年份
-QUERY_INTERVAL = 6  # 每次查询的间隔，单位为秒，低于5的值可能导致IP被封
+QUERY_INTERVAL = 10  # 每次查询的间隔，单位为秒，低于5的值可能导致IP被封
 PROVINCE = '河南'  # 大学所在的省份，可以参考下面的PROVIENCE_DICT填写
+GENERATE_XLSX = True  # 是否生成xlsx文件
 
 # region 但是这是碰都不能碰的Region
 
@@ -626,8 +628,27 @@ def main():
         logging.fatal('获取专业字典时发生网络异常')
         exit(1)
 
+    wb = openpyxl.Workbook()
+    wb.remove_sheet(wb.active)
+
     if not NO_UNIV_SCORE:
         logging.info('开始获取高校各省分数线')
+        if GENERATE_XLSX:
+            wb.create_sheet('学校分数线')
+            wb['学校分数线'].append([
+                '学校代码',
+                '学校名称全称',
+                '所在省份',
+                '面向省份',
+                '科类',
+                '年份',
+                '录取批次',
+                '招生类型',
+                '最低分/最低位次',
+                '省控线',
+                '专业组',
+                '选科要求'
+            ])
         with open('min_score_%s.csv' % HASH, 'w', encoding='utf-8') as csvfile:
             csvwriter = csv.DictWriter(
                 csvfile, fieldnames=MiniumScoreForUnivs.__annotations__.keys()
@@ -642,11 +663,30 @@ def main():
                     exit(1)
                 for score in score_list:
                     csvwriter.writerow(score)
+                    if GENERATE_XLSX:
+                        wb['学校分数线'].append([v for v in score.values()])
+                wb.save('data_%s.xlsx' % HASH)
                 logging.info('成功获取%s分数线信息' % univ['name'])
         logging.info('已获取全部高校分数线信息')
 
     if not NO_ENROLL_PLAN:
         logging.info('开始获取高校各专业招生计划')
+        if GENERATE_XLSX:
+            wb.create_sheet('各专业招生计划')
+            wb['各专业招生计划'].append([
+                '学校代码',
+                '学校名称全称',
+                '所在省份',
+                '面向省份',
+                '年份',
+                '科类',
+                '招生批次',
+                '招生专业名称',
+                '计划招生',
+                '学制',
+                '学费',
+                '选科要求'
+            ])
         with open('enroll_plan_%s.csv' % HASH, 'w', encoding='utf-8') as csvfile:
             csvwriter = csv.DictWriter(
                 csvfile, fieldnames=EnrollPlan.__annotations__.keys()
@@ -661,11 +701,28 @@ def main():
                     exit(1)
                 for plan in plan_list:
                     csvwriter.writerow(plan)
+                    if GENERATE_XLSX:
+                        wb['各专业招生计划'].append([v for v in plan.values()])
+                wb.save('data_%s.xlsx' % HASH)
                 logging.info('成功获取%s招生计划信息' % univ['name'])
         logging.info('已获取全部高校招生计划信息')
 
     if not NO_MAJOR_SCORE:
         logging.info('开始获取高校各专业分数线')
+        if GENERATE_XLSX:
+            wb.create_sheet('分专业录取分数线')
+            wb['分专业录取分数线'].append([
+                '学校代码',
+                '学校名称全称',
+                '所在省份',
+                '面向省份',
+                '年份',
+                '科类',
+                '录取专业名称',
+                '录取批次',
+                '平均分',
+                '最低分/最低位次'
+            ])
         with open('major_score_%s.csv' % HASH, 'w', encoding='utf-8') as csvfile:
             csvwriter = csv.DictWriter(
                 csvfile, fieldnames=MiniumScoreForMajors.__annotations__.keys()
@@ -680,6 +737,8 @@ def main():
                     exit(1)
                 for score in major_score:
                     csvwriter.writerow(score)
+                    wb['分专业录取分数线'].append([v for v in score.values()])
+                wb.save('data_%s.xlsx' % HASH)
                 logging.info('成功获取%s各专业分数线信息' % univ['name'])
         logging.info('已获取全部高校各专业分数线信息')
 
