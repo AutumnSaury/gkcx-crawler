@@ -3,10 +3,10 @@ import requests
 import csv
 import logging
 import time
-from typing import TypedDict, Optional, Optional
 import hashlib
 import random
 import openpyxl
+from type import *
 
 NO_UNIV_SCORE = False  # 是否不查询分数线
 NO_ENROLL_PLAN = False  # 是否不查询招生计划
@@ -19,8 +19,8 @@ GENERATE_XLSX = True  # 是否生成xlsx文件
 
 # region 但是这是碰都不能碰的Region
 
-# 数字ID（行政区划代码）到省份名的映射，比较搞笑的是eol.cn的接口用到的ID有的是数字有的是字符串
-PROVIENCE_DICT = {
+
+PROVIENCE_DICT = {  # 数字ID（行政区划代码）到省份名的映射，比较搞笑的是eol.cn的接口用到的ID有的是数字有的是字符串
     11: '北京',
     12: '天津',
     13: '河北',
@@ -69,213 +69,6 @@ HASH = generate_random_hash()  # 本次运行的HASH，用于标识CSV批次
 logging.basicConfig(level=logging.INFO,
                     format='[%(asctime)s][%(levelname)s] %(message)s'
                     )
-
-# region 一些自定义类型
-
-
-class Univ(TypedDict):
-    """eol.cn的搜索接口返回的大学信息，这接口设计一言难尽"""
-    admissions: str
-    answerurl: str
-    belong: str
-    central: str
-    city_id: str
-    city_name: str
-    code_enroll: str  # 后面加了两个0的五位招生代码
-    county_id: str
-    county_name: str
-    department: str
-    doublehigh: str
-    dual_class: str
-    dual_class_name: str
-    f211: str
-    f985: str
-    is_logo: str
-    is_recruitment: str
-    is_top: int  # ?
-    level: str
-    level_name: str
-    name: str  # 高校名称
-    nature: str
-    nature_name: str
-    province_id: str
-    province_name: str
-    rank: str
-    rank_type: str
-    school_id: int  # 高校ID
-    school_type: str
-    special: list
-    type: str
-    type_name: str
-    view_month: str
-    view_month_number: str
-    view_total: str
-    view_total_number: str
-    view_week: str
-    view_week_number: str
-    view_year: int
-
-
-class MiniumScoreForUnivs(TypedDict):
-    """分数线"""
-    code: str
-    """招生代码，不知道这玩意会不会有前导0，就用字符串了"""
-    name: str
-    """高校名称"""
-    located_province: str
-    """高校所在省份"""
-    target_province: str
-    """招生面向省份"""
-    major: str
-    """科类，文科/理科/综合（新高考）"""
-    year: int
-    """年份"""
-    enroll_level: str
-    """录取批次"""
-    enroll_type: str
-    """招生类型"""
-    minium_score_and_rank: str
-    """最低分/最低位次"""
-    prov_minium_score: str
-    """省控线"""
-    major_group: Optional[str]
-    """专业组，非新高考省份无此值"""
-    major_requirements: Optional[str]
-    """选科要求，非新高考省份无此值"""
-
-
-class EnrollPlan(TypedDict):
-    """各专业招生计划"""
-    code: str
-    """招生代码"""
-    name: str
-    """高校名称"""
-    located_province: str
-    """高校所在省份"""
-    target_province: str
-    """招生面向省份"""
-    year: int
-    """年份"""
-    major: str
-    """科类"""
-    enroll_level: str
-    """招生批次"""
-    major_name: str
-    """招生专业名称"""
-    planned_number: int
-    """计划招生人数"""
-    duration: str
-    """学制"""
-    tuition: str
-    """学费"""
-    major_requirements: Optional[str]
-    """选科要求"""
-
-
-class MiniumScoreForMajors(TypedDict):  # Docstring是这么用的吗，写起来好难受（）
-    """各专业录取分数线"""
-    code: str
-    """招生代码"""
-    name: str
-    """高校名称"""
-    located_province: str
-    """高校所在省份"""
-    target_province: str
-    """招生面向省份"""
-    year: int
-    """年份"""
-    major: str
-    """科类"""
-    major_name: str
-    """招生专业名称"""
-    enroll_level: str
-    """招生批次"""
-    avg_score: str
-    """平均分"""
-    minium_score_and_rank: str
-    """最低分/最低位次"""
-    major_requirements: Optional[str]
-    """选科要求，非新高考省份无此值"""
-
-
-# region 接口返回的元数据
-
-
-class MetaProvinceScoreNewsdata(TypedDict):
-    """分数线元数据接口返回的newsdata字段"""
-    province: list[int]
-    """排序过的省份ID"""
-    type: dict[str, list[int]]
-    """各省各年份科类，键名格式为省份ID_四位年份，如41_2022"""
-    year: dict[str, list[int]]
-    """各省招生年份，键名即省份ID"""
-
-
-class MetaMiniumScoreForUnivs(TypedDict):
-    """分数线元数据"""
-    data: dict
-    """看起来不怎么有用的元数据"""
-    newsdata: MetaProvinceScoreNewsdata
-    """可能比较有用的元数据"""
-    pids: list[int]
-    """排序过的省份ID"""
-    year: list[int]
-    """年份列表"""
-
-
-class MetaSpecialPlanNewsdata(TypedDict):
-    """招生计划元数据接口返回的newsdata字段"""
-    batch: dict[str, list[int]]
-    """各省各年份各科类招生批次，键名格式为省份ID_四位年份_科类，如41_2022_1"""
-    group: dict[str, list[dict]]
-    """各省各年份各科类专业组，不重要"""
-    groups: dict[str, list[dict]]
-    """各省各年份各科类各招生批次专业组，不重要"""
-    province: list[int]
-    """排序过的省份ID"""
-    type: dict[str, list[int]]
-    """各省各年份科类，键名格式为省份ID_四位年份，如41_2022"""
-    year: dict[str, list[int]]
-    """各省招生年份，键名即省份ID"""
-
-
-class MetaEnrollPlan(TypedDict):
-    """招生计划元数据"""
-    newsdata: MetaSpecialPlanNewsdata
-    """可能比较有用的元数据"""
-    pids: list[int]
-    """排序过的省份ID"""
-    year: list[int]
-    """年份列表"""
-
-
-class MetaSpecialScoreNewsdata(TypedDict):
-    """专业分数线元数据接口返回的newsdata字段"""
-    batch: dict[str, list[int]]
-    """各省各年份各科类招生批次，键名格式为省份ID_四位年份_科类，如41_2022_1"""
-    group: dict[str, list[dict]]
-    """各省各年份各科类专业组，不重要"""
-    groups: dict[str, list[dict]]
-    """各省各年份各科类各招生批次专业组，不重要"""
-    province: list[int]
-    """排序过的省份ID"""
-    type: dict[str, list[int]]
-    """各省各年份科类，键名格式为省份ID_四位年份，如41_2022"""
-    year: dict[str, list[int]]
-    """各省招生年份，键名即省份ID"""
-
-
-class MetaMiniumScoreForMajors(TypedDict):
-    """专业分数线元数据"""
-    newsdata: MetaSpecialScoreNewsdata
-    """可能比较有用的元数据"""
-    pids: list[int]
-    """排序过的省份ID"""
-    year: list[int]
-    """年份列表"""
-# endregion
-
-# endregion
 
 
 class NetworkException(Exception):
@@ -758,6 +551,7 @@ def main():
     logging.info('已成功爬取所有数据')
 
 
-main()
+if __name__ == '__main__':
+    main()
 
 # endregion
