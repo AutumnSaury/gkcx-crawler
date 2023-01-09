@@ -1,3 +1,4 @@
+import copy
 import math
 import requests
 import csv
@@ -66,9 +67,11 @@ def generate_random_hash() -> str:
 
 HASH = generate_random_hash()  # 本次运行的HASH，用于标识CSV批次
 
-logging.basicConfig(level=logging.INFO,
-                    format='[%(asctime)s][%(levelname)s] %(message)s'
-                    )
+logging.basicConfig(
+    level=logging.INFO,
+    datefmt="%m/%d %H:%M:%S",
+    format='[%(asctime)s][%(levelname)s] %(message)s'
+)
 
 
 class NetworkException(Exception):
@@ -86,20 +89,68 @@ def load_dictionary() -> dict[str, str]:
     return res.json()['data']
 
 
-def query_with_retry(url: str, headers: dict, json: dict, retry_interval=120) -> requests.Response:
-    def inner():
-        return requests.post(url, headers=headers, json=json)
-    retries = 1
+def intercepted_eol_request(payload: dict, retry_interval=120) -> EolResponseData:
+    """向eol.cn的接口发送请求"""
+    logging.debug('正在向eol.cn发送请求')
 
-    while (data := inner()).json()['code'] == '1069':
-        logging.error('第%s次重试：访问频率过高，将在等待%s秒后重试' % (retries, retry_interval))
-        time.sleep(retry_interval)
-        retries += 1
+    def send_request(payload):
+        return requests.post('https://api.eol.cn/web/api/',
+                             headers={
+                                 'accept': 'application/json, text/plain, */*',
+                                 'content-type': 'application/json;charset=UTF-8',
+                                 'user-agent': 'Mozilla/5.0'
+                             },
+                             json=payload)
 
-    if (retries > 1):
-        logging.info('第%s次重试成功' % retries)
+    # region 嗯造拦截器
+    retries = 0
+    data: requests.Response | None = None
+    while True:
+        data = send_request(payload)
+        body: EolResponse = data.json()
+        code = body['code']
 
-    return data
+        logging.debug('响应代码：%s' % code)
+
+        if (code == '0000'):
+            """正常"""
+            if retries > 0:
+                logging.info('第%s次重试成功' % retries)
+            break
+
+        if (code == '1069'):
+            """被限速"""
+            retries += 1
+            logging.warning('请求频率过高，%s秒后进行第%s重试', (retry_interval, retries))
+            time.sleep(retry_interval)
+            continue
+
+        if (code == '1090'):
+            """响应体大小超出限制"""
+            logging.warning('响应体大小超出限制，处理中')
+            modified_payload = copy.deepcopy(payload)
+            modified_payload['size'] = payload['size'] // 2
+            modified_payload['page'] = (payload['page'] - 1) * 2 + 1
+
+            time.sleep(QUERY_INTERVAL)
+            page_1 = intercepted_eol_request(modified_payload)
+
+            modified_payload['page'] += 1
+
+            time.sleep(QUERY_INTERVAL)
+            page_2 = intercepted_eol_request(modified_payload)
+
+            page_1['item'] += page_2['item']
+            logging.info('处理完成')
+            return page_1
+
+        # 上边的if一个都没匹配到的话会跑到这里来
+        logging.fatal('未知错误：%s' % code)
+        logging.fatal(body['message'])
+        raise NetworkException('请求失败')
+    # endregion
+
+    return body['data']
 
 
 def get_univ_list(prov: str, rev_prov_dict: dict[str, int] = REV_PROVIENCE_DICT) -> list[Univ]:
@@ -119,28 +170,19 @@ def get_univ_list(prov: str, rev_prov_dict: dict[str, int] = REV_PROVIENCE_DICT)
     """
     prov_id: int = rev_prov_dict[prov]
     try:
-        preflight_res = query_with_retry(
-            'https://api.eol.cn/web/api/',
-            headers={
-                'accept': 'application/json, text/plain, */*',
-                'content-type': 'application/json;charset=UTF-8',
-                'user-agent': 'Mozilla/5.0'
-            },
-            json={
+        preflight_res = intercepted_eol_request(
+            {
                 'province_id': prov_id,
                 'uri': 'apidata/api/gk/school/lists',
                 'page': 1,
+                'size': 1,
                 'request_type': 1
             }
         )
-
-        if preflight_res.status_code != 200:
-            raise NetworkException('网络错误')
-
     except requests.exceptions.RequestException:
         raise NetworkException('网络错误')
 
-    item_count: int = preflight_res.json()['data']['numFound']
+    item_count: int = preflight_res['numFound']
     page_count = math.ceil(item_count / 20)
     start_page = 1
     if len(PAGE_RANGE) == 2:
@@ -151,32 +193,21 @@ def get_univ_list(prov: str, rev_prov_dict: dict[str, int] = REV_PROVIENCE_DICT)
 
     for page in range(start_page, page_count + 1):
         try:
-            res = query_with_retry(
-                'https://api.eol.cn/web/api/',
-                json={
+            res = intercepted_eol_request(
+                {
                     'province_id': int(prov_id),
                     'uri': 'apidata/api/gk/school/lists',
                     'size': 20,
                     'page': page,
                     'request_type': 1
-                },
-                headers={
-                    'accept': 'application/json, text/plain, */*',
-                    'content-type': 'application/json;charset=UTF-8',
-                    'user-agent': 'Mozilla/5.0'
-                    # 确实做了UA检测，但是没完全做
                 }
             )
-
-            if res.status_code != 200:
-                raise NetworkException('网络错误')
-
             time.sleep(QUERY_INTERVAL)
 
         except requests.exceptions.RequestException:
             raise NetworkException('网络错误')
 
-        univ_list += res.json()['data']['item']
+        univ_list += res['item']
 
     return univ_list
 
@@ -255,14 +286,8 @@ def get_enroll_plan_of_majors(univ: Univ, dictionary: dict[str, str], prov_dict:
             for major_id in metadata['newsdata']['type']['%s_%s' % (prov_id, year)]:
                 for batch_id in metadata['newsdata']['batch']['%s_%s_%s' % (prov_id, year, major_id)]:
                     try:
-                        res = query_with_retry(
-                            'https://api.eol.cn/web/api/',
-                            headers={
-                                'accept': 'application/json, text/plain, */*',
-                                'content-type': 'application/json;charset=UTF-8',
-                                'user-agent': 'Mozilla/5.0'
-                            },
-                            json={
+                        res = intercepted_eol_request(
+                            {
                                 'local_batch_id': batch_id,
                                 'local_province_id': prov_id,
                                 'local_type_id': str(major_id),
@@ -276,20 +301,14 @@ def get_enroll_plan_of_majors(univ: Univ, dictionary: dict[str, str], prov_dict:
                     except requests.exceptions.RequestException:
                         raise NetworkException('网络错误')
 
-                    total_items = res.json()['data']['numFound']
+                    total_items = res['numFound']
                     total_pages = math.ceil(total_items / 30)
 
                     for page in range(1, total_pages + 1):
                         try:
                             time.sleep(QUERY_INTERVAL)
-                            res = query_with_retry(
-                                'https://api.eol.cn/web/api/',
-                                headers={
-                                    'accept': 'application/json, text/plain, */*',
-                                    'content-type': 'application/json;charset=UTF-8',
-                                    'user-agent': 'Mozilla/5.0'
-                                },
-                                json={
+                            res = intercepted_eol_request(
+                                {
                                     'local_batch_id': batch_id,
                                     'local_province_id': prov_id,
                                     'local_type_id': str(major_id),
@@ -303,7 +322,7 @@ def get_enroll_plan_of_majors(univ: Univ, dictionary: dict[str, str], prov_dict:
                         except requests.exceptions.RequestException:
                             raise NetworkException('网络错误')
 
-                        data = res.json()['data']
+                        data = res
 
                         for item in data['item']:
                             new_row: EnrollPlan = {
@@ -348,14 +367,8 @@ def get_minium_score_of_majors(univ: Univ, dictionary: dict[str, str], prov_dict
             for major_id in metadata['newsdata']['type']['%s_%s' % (prov_id, year)]:
                 for batch_id in metadata['newsdata']['batch']['%s_%s_%s' % (prov_id, year, major_id)]:
                     try:
-                        res = query_with_retry(
-                            'https://api.eol.cn/web/api/',
-                            headers={
-                                'accept': 'application/json, text/plain, */*',
-                                'content-type': 'application/json;charset=UTF-8',
-                                'user-agent': 'Mozilla/5.0'
-                            },
-                            json={
+                        res = intercepted_eol_request(
+                            {
                                 'local_batch_id': batch_id,
                                 'local_province_id': prov_id,
                                 'local_type_id': str(major_id),
@@ -369,20 +382,14 @@ def get_minium_score_of_majors(univ: Univ, dictionary: dict[str, str], prov_dict
                     except requests.exceptions.RequestException:
                         raise NetworkException('网络错误')
 
-                    total_items = res.json()['data']['numFound']
+                    total_items = res['numFound']
                     total_pages = math.ceil(total_items / 30)
 
                     for page in range(1, total_pages + 1):
                         try:
                             time.sleep(QUERY_INTERVAL)
-                            res = query_with_retry(
-                                'https://api.eol.cn/web/api/',
-                                headers={
-                                    'accept': 'application/json, text/plain, */*',
-                                    'content-type': 'application/json;charset=UTF-8',
-                                    'user-agent': 'Mozilla/5.0'
-                                },
-                                json={
+                            res = intercepted_eol_request(
+                                {
                                     'local_batch_id': batch_id,
                                     'local_province_id': prov_id,
                                     'local_type_id': str(major_id),
@@ -396,7 +403,7 @@ def get_minium_score_of_majors(univ: Univ, dictionary: dict[str, str], prov_dict
                         except requests.exceptions.RequestException:
                             raise NetworkException('网络错误')
 
-                        data = res.json()['data']
+                        data = res
 
                         for item in data['item']:
                             new_row: MiniumScoreForMajors = {

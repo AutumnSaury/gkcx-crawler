@@ -4,6 +4,21 @@ from typing import TypedDict, Optional
 from .meta import *
 
 
+class EolResponseData(TypedDict):
+    """eol.cn的接口返回数据的data字段"""
+    item: list[dict]
+    numFound: int
+
+
+class EolResponse(TypedDict):
+    """eol.cn的接口返回的数据"""
+    code: str
+    data: EolResponseData
+    encrydata: str
+    location: str
+    message: str
+
+
 class Univ(TypedDict):
     """eol.cn的搜索接口返回的大学信息，这接口设计一言难尽"""
     admissions: str
@@ -45,6 +60,8 @@ class Univ(TypedDict):
     view_week: str
     view_week_number: str
     view_year: int
+
+# region 生成表格用的类型
 
 
 class MiniumScoreForUnivs(TypedDict):
@@ -127,3 +144,5 @@ class MiniumScoreForMajors(TypedDict):  # Docstring是这么用的吗，写起�
     """最低分/最低位次"""
     major_requirements: Optional[str]
     """选科要求，非新高考省份无此值"""
+
+# endregion
