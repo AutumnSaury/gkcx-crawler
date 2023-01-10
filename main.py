@@ -13,6 +13,7 @@ NO_UNIV_SCORE = False  # 是否不查询分数线
 NO_ENROLL_PLAN = False  # 是否不查询招生计划
 NO_MAJOR_SCORE = False  # 是否不查询专业分数线
 PAGE_RANGE = []  # 大学列表页数范围
+ITEM_OFFSET = 0  # 起始位置偏移，或者说从起始页的第n + 1个大学开始查询，只能为非负值
 YEAR_SINCE = 2020  # 数据起始年份
 QUERY_INTERVAL = 10  # 每次查询的间隔，单位为秒，低于10的值可能导致IP暂时被封
 PROVINCE = '河南'  # 大学所在的省份，可以参考下面的PROVIENCE_DICT填写
@@ -209,7 +210,7 @@ def get_univ_list(prov: str, rev_prov_dict: dict[str, int] = REV_PROVIENCE_DICT)
 
         univ_list += res['item']
 
-    return univ_list
+    return univ_list[ITEM_OFFSET:]
 
 
 def get_minium_score_of_univ(univ: Univ, dictionary: dict[str, str], prov_dict: dict[int, str] = PROVIENCE_DICT) -> list[MiniumScoreForUnivs]:
