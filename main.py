@@ -534,7 +534,8 @@ def main():
                 '录取专业名称',
                 '录取批次',
                 '平均分',
-                '最低分/最低位次'
+                '最低分/最低位次',
+                '选科要求'
             ])
         with open('major_score_%s.csv' % HASH, 'w', encoding='utf-8', newline='') as csvfile:
             csvwriter = csv.DictWriter(
