@@ -64,5 +64,9 @@ class SdnuTestCase(UnivTestCase):
     univ_name = '山东师范大学'
 
 
+class XyqczyTestCase(UnivTestCase):
+    univ_name = '襄阳汽车职业技术学院'
+
+
 if __name__ == '__main__':
     unittest.main()
