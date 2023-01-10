@@ -459,7 +459,7 @@ def main():
                 '专业组',
                 '选科要求'
             ])
-        with open('min_score_%s.csv' % HASH, 'w', encoding='utf-8') as csvfile:
+        with open('min_score_%s.csv' % HASH, 'w', encoding='utf-8', newline='') as csvfile:
             csvwriter = csv.DictWriter(
                 csvfile, fieldnames=MiniumScoreForUnivs.__annotations__.keys()
             )
@@ -498,7 +498,7 @@ def main():
                 '学费',
                 '选科要求'
             ])
-        with open('enroll_plan_%s.csv' % HASH, 'w', encoding='utf-8') as csvfile:
+        with open('enroll_plan_%s.csv' % HASH, 'w', encoding='utf-8', newline='') as csvfile:
             csvwriter = csv.DictWriter(
                 csvfile, fieldnames=EnrollPlan.__annotations__.keys()
             )
@@ -535,7 +535,7 @@ def main():
                 '平均分',
                 '最低分/最低位次'
             ])
-        with open('major_score_%s.csv' % HASH, 'w', encoding='utf-8') as csvfile:
+        with open('major_score_%s.csv' % HASH, 'w', encoding='utf-8', newline='') as csvfile:
             csvwriter = csv.DictWriter(
                 csvfile, fieldnames=MiniumScoreForMajors.__annotations__.keys()
             )
