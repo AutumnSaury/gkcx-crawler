@@ -113,20 +113,20 @@ def intercepted_eol_request(payload: dict, retry_interval=120) -> EolResponseDat
 
         logging.debug('响应代码：%s' % code)
 
-        if (code == '0000'):
+        if code == '0000':
             """正常"""
             if retries > 0:
                 logging.info('第%s次重试成功' % retries)
             break
 
-        if (code == '1069'):
+        if code == '1069':
             """被限速"""
             retries += 1
             logging.warning('请求频率过高，%s秒后进行第%s重试', (retry_interval, retries))
             time.sleep(retry_interval)
             continue
 
-        if (code == '1090'):
+        if code == '1090':
             """响应体大小超出限制"""
             logging.warning('响应体大小超出限制，处理中')
             modified_payload = copy.deepcopy(payload)
@@ -155,20 +155,7 @@ def intercepted_eol_request(payload: dict, retry_interval=120) -> EolResponseDat
 
 
 def get_univ_list(prov: str, rev_prov_dict: dict[str, int] = REV_PROVIENCE_DICT) -> list[Univ]:
-    """Get the list of universities in a province.
-
-    Args:
-        prov (str): Name of the province, e.g. '河南'
-        prov_dict (dict[str, str], optional): A dictionary from names to IDs for provinces. Defaults to REV_PROVIENCE_DICT.
-
-    Returns:
-        list: A list containing the list of universities in the province.
-
-    Raises:
-        NetworkException: If the request fails.
-
-    生成Docstring的插件只提供了英文模板，那我就写英文了
-    """
+    """Get the list of universities in a province."""
     prov_id: int = rev_prov_dict[prov]
     try:
         preflight_res = intercepted_eol_request(

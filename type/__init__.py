@@ -1,6 +1,6 @@
 """自定义类型"""
 
-from typing import TypedDict, Optional
+from typing import Optional
 from .meta import *
 
 

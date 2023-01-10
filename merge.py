@@ -131,7 +131,7 @@ def merge(csv: list[str], xlsx: list[str], type: str, remove_empty_lines: bool):
 
     for file in xlsx:
         wb = openpyxl.load_workbook(file)
-        if ('学校分数线' in wb):
+        if '学校分数线' in wb:
             for row in wb['学校分数线'].rows:
                 if row[0].value == '学校代码':
                     continue
@@ -149,7 +149,7 @@ def merge(csv: list[str], xlsx: list[str], type: str, remove_empty_lines: bool):
                     'major_group': row[10].value,
                     'major_requirements': row[11].value
                 })
-        if ('各专业招生计划' in wb):
+        if '各专业招生计划' in wb:
             for row in wb['各专业招生计划'].rows:
                 if row[0].value == '学校代码':
                     continue
@@ -167,7 +167,7 @@ def merge(csv: list[str], xlsx: list[str], type: str, remove_empty_lines: bool):
                     'tuition': row[11].value,
                     'major_requirements': row[12].value
                 })
-        if ('分专业录取分数线' in wb):
+        if '分专业录取分数线' in wb:
             for row in wb['分专业录取分数线'].rows:
                 if row[0].value == '学校代码':
                     continue
@@ -188,9 +188,9 @@ def merge(csv: list[str], xlsx: list[str], type: str, remove_empty_lines: bool):
     if remove_empty_lines:
         for k, v in form.items():
             v = cast(list, v)  # 这个语法真的好丑
-            v = list(filter(lambda x: x, v))
+            form[k] = list(filter(lambda x: x, v))
 
-    if (type == 'csv'):
+    if type == 'csv':
         for k, v in form.items():
             if v:
                 v = cast(list, v)
@@ -198,7 +198,7 @@ def merge(csv: list[str], xlsx: list[str], type: str, remove_empty_lines: bool):
                     writer = _csv.DictWriter(f, fieldnames=v[0].keys())
                     writer.writeheader()
                     writer.writerows(v)
-    elif (type == 'xlsx'):
+    elif type == 'xlsx':
         wb = openpyxl.Workbook()
         wb.remove(wb.active)
         for k, v in form.items():
