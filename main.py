@@ -337,7 +337,7 @@ def get_minium_score_of_majors(univ: Univ, dictionary: dict[str, str], prov_dict
     school_id = univ['school_id']
     try:
         res = requests.get(
-            'https://static-data.gaokao.cn/www/2.0/school/%s/dic/specialplan.json' % school_id
+            'https://static-data.gaokao.cn/www/2.0/school/%s/dic/specialscore.json' % school_id
         )
         if res.status_code == 404:
             logging.info('该校无信息，已跳过')
