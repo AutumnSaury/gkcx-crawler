@@ -33,6 +33,7 @@ class UnivTestCase(unittest.TestCase):
         try:
             data = get_minium_score_of_univ(self.univ, self.dictionary)
             print(json.dumps(data, ensure_ascii=False, indent=4))
+            self.assertTrue(bool(data))
         except:
             error = True
         self.assertFalse(error)
@@ -42,6 +43,7 @@ class UnivTestCase(unittest.TestCase):
         try:
             data = get_enroll_plan_of_majors(self.univ, self.dictionary)
             print(json.dumps(data, ensure_ascii=False, indent=4))
+            self.assertTrue(bool(data))
         except:
             error = True
         self.assertFalse(error)
@@ -51,6 +53,7 @@ class UnivTestCase(unittest.TestCase):
         try:
             data = get_minium_score_of_majors(self.univ, self.dictionary)
             print(json.dumps(data, ensure_ascii=False, indent=4))
+            self.assertTrue(bool(data))
         except:
             error = True
         self.assertFalse(error)
