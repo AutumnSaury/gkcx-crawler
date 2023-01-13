@@ -16,11 +16,11 @@ class Form(TypedDict):
     """招生计划"""
 
 
-HEADERS = [
+HEADERS = (
     'code,name,located_province,target_province,major,year,enroll_level,enroll_type,minium_score_and_rank,prov_minium_score,major_group,major_requirements',  # 省分数线
     'code,name,located_province,target_province,year,major,enroll_level,major_name,planned_number,duration,tuition,major_requirements',  # 招生计划
     'code,name,located_province,target_province,year,major,major_name,enroll_level,avg_score,minium_score_and_rank,major_requirements'  # 专业分数线
-]
+)
 
 READABLE_HEADERS = {
     'province': [
@@ -135,55 +135,32 @@ def merge(csv: list[str], xlsx: list[str], type: str, remove_empty_lines: bool):
             for row in wb['学校分数线'].rows:
                 if row[0].value == '学校代码':
                     continue
-                form['province'].append({
-                    'code': row[0].value,
-                    'name': row[1].value,
-                    'located_province': row[2].value,
-                    'target_province': row[3].value,
-                    'major': row[4].value,
-                    'year': row[5].value,
-                    'enroll_level': row[6].value,
-                    'enroll_type': row[7].value,
-                    'minium_score_and_rank': row[8].value,
-                    'prov_minium_score': row[9].value,
-                    'major_group': row[10].value,
-                    'major_requirements': row[11].value
-                })
+                new_row = cast(MiniumScoreForUnivs,
+                               {k: v for k, v in zip(
+                                   MiniumScoreForUnivs.__annotations__.keys(),
+                                   (v.value for v in row)
+                               )})
+                form['province'].append(new_row)
         if '各专业招生计划' in wb:
             for row in wb['各专业招生计划'].rows:
                 if row[0].value == '学校代码':
                     continue
-                form['enroll'].append({
-                    'code': row[0].value,
-                    'name': row[1].value,
-                    'located_province': row[2].value,
-                    'target_province': row[3].value,
-                    'year': row[4].value,
-                    'major': row[5].value,
-                    'enroll_level': row[6].value,
-                    'major_name': row[8].value,
-                    'planned_number': row[9].value,
-                    'duration': row[10].value,
-                    'tuition': row[11].value,
-                    'major_requirements': row[12].value
-                })
+                new_row = cast(EnrollPlan,
+                               {k: v for k, v in zip(
+                                   EnrollPlan.__annotations__.keys(),
+                                   (v.value for v in row)
+                               )})
+                form['enroll'].append(new_row)
         if '分专业录取分数线' in wb:
             for row in wb['分专业录取分数线'].rows:
                 if row[0].value == '学校代码':
                     continue
-                form['major'].append({
-                    'code': row[0].value,
-                    'name': row[1].value,
-                    'located_province': row[2].value,
-                    'target_province': row[3].value,
-                    'year': row[4].value,
-                    'major': row[5].value,
-                    'major_name': row[6].value,
-                    'enroll_level': row[7].value,
-                    'avg_score': row[8].value,
-                    'minium_score_and_rank': row[9].value,
-                    'major_requirements': row[10].value
-                })
+                new_row = cast(MiniumScoreForMajors,
+                               {k: v for k, v in zip(
+                                   MiniumScoreForMajors.__annotations__.keys(),
+                                   (v.value for v in row)
+                               )})
+                form['major'].append(new_row)
 
     if remove_empty_lines:
         for k, v in form.items():
