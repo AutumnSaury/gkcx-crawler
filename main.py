@@ -104,25 +104,25 @@ def intercepted_eol_request(payload: dict, retry_interval=120) -> EolResponseDat
                              json=payload)
 
     # region 嗯造拦截器
-    retries = 0
+    retries: int = 0
     data: requests.Response | None = None
     while True:
         data = send_request(payload)
         body: EolResponse = data.json()
         code = body['code']
 
-        logging.debug('响应代码：%s' % code)
+        logging.debug(f'响应代码：{code}')
 
         if code == '0000':
             """正常"""
             if retries > 0:
-                logging.info('第%s次重试成功' % retries)
+                logging.info(f'第{retries}次重试成功')
             break
 
         if code == '1069':
             """被限速"""
             retries += 1
-            logging.warning('请求频率过高，%s秒后进行第%s重试', (retry_interval, retries))
+            logging.warning(f'请求频率过高，{retry_interval}秒后进行第{retries}次重试')
             time.sleep(retry_interval)
             continue
 
@@ -146,7 +146,7 @@ def intercepted_eol_request(payload: dict, retry_interval=120) -> EolResponseDat
             return page_1
 
         # 上边的if一个都没匹配到的话会跑到这里来
-        logging.fatal('未知错误：%s' % code)
+        logging.fatal(f'未知错误：{code}')
         logging.fatal(body['message'])
         raise NetworkException('请求失败')
     # endregion
@@ -205,7 +205,7 @@ def get_minium_score_of_univ(univ: Univ, dictionary: dict[str, str], prov_dict: 
     school_id = univ['school_id']
     try:
         res = requests.get(
-            'https://static-data.gaokao.cn/www/2.0/school/%s/dic/provincescore.json' % school_id
+            f'https://static-data.gaokao.cn/www/2.0/school/{school_id}/dic/provincescore.json'
         )
         if res.status_code == 404:
             # 某些学校，如军校，不公开招生，没有元数据可以爬
@@ -221,11 +221,10 @@ def get_minium_score_of_univ(univ: Univ, dictionary: dict[str, str], prov_dict: 
         year_list = metadata['newsdata']['year'][str(prov_id)]
         year_list = filter(lambda x: x >= YEAR_SINCE, year_list)
         for year in year_list:
-            for major_id in metadata['newsdata']['type']['%s_%s' % (prov_id, year)]:
+            for major_id in metadata['newsdata']['type'][f'{prov_id}_{year}']:
                 try:
-                    res = requests.get('https://static-data.gaokao.cn/www/2.0/schoolprovinceindex/%s/%s/%s/%s/1.json'
-                                       % (year, school_id, prov_id, major_id)
-                                       )
+                    res = requests.get(
+                        f'https://static-data.gaokao.cn/www/2.0/schoolprovinceindex/{year}/{school_id}/{prov_id}/{major_id}/1.json')
                     if res.status_code != 200:
                         raise NetworkException('网络错误')
                 except requests.exceptions.RequestException:
@@ -241,7 +240,7 @@ def get_minium_score_of_univ(univ: Univ, dictionary: dict[str, str], prov_dict: 
                         'year': year,
                         'enroll_level': item['local_batch_name'],
                         'enroll_type': item['zslx_name'],
-                        'minium_score_and_rank': '%s/%s' % (item['min'], item['min_section']),
+                        'minium_score_and_rank': f'{item["min"]}/{item["min_section"]}',
                         'prov_minium_score': item['proscore'],
                         'major_group': item['sg_name'],
                         'major_requirements': item['sg_info']
@@ -256,7 +255,7 @@ def get_enroll_plan_of_majors(univ: Univ, dictionary: dict[str, str], prov_dict:
     school_id = univ['school_id']
     try:
         res = requests.get(
-            'https://static-data.gaokao.cn/www/2.0/school/%s/dic/specialplan.json' % school_id
+            f'https://static-data.gaokao.cn/www/2.0/school/{school_id}/dic/specialplan.json'
         )
         if res.status_code == 404:
             logging.info('该校无信息，已跳过')
@@ -271,8 +270,8 @@ def get_enroll_plan_of_majors(univ: Univ, dictionary: dict[str, str], prov_dict:
         year_list = metadata['newsdata']['year'][str(prov_id)]
         year_list = filter(lambda x: x >= YEAR_SINCE, year_list)
         for year in year_list:
-            for major_id in metadata['newsdata']['type']['%s_%s' % (prov_id, year)]:
-                for batch_id in metadata['newsdata']['batch']['%s_%s_%s' % (prov_id, year, major_id)]:
+            for major_id in metadata['newsdata']['type'][f'{prov_id}_{year}']:
+                for batch_id in metadata['newsdata']['batch'][f'{prov_id}_{year}_{major_id}']:
                     try:
                         res = intercepted_eol_request(
                             {
@@ -337,7 +336,7 @@ def get_minium_score_of_majors(univ: Univ, dictionary: dict[str, str], prov_dict
     school_id = univ['school_id']
     try:
         res = requests.get(
-            'https://static-data.gaokao.cn/www/2.0/school/%s/dic/specialscore.json' % school_id
+            f'https://static-data.gaokao.cn/www/2.0/school/{school_id}/dic/specialscore.json'
         )
         if res.status_code == 404:
             logging.info('该校无信息，已跳过')
@@ -352,8 +351,8 @@ def get_minium_score_of_majors(univ: Univ, dictionary: dict[str, str], prov_dict
         year_list = metadata['newsdata']['year'][str(prov_id)]
         year_list = filter(lambda x: x >= YEAR_SINCE, year_list)
         for year in year_list:
-            for major_id in metadata['newsdata']['type']['%s_%s' % (prov_id, year)]:
-                for batch_id in metadata['newsdata']['batch']['%s_%s_%s' % (prov_id, year, major_id)]:
+            for major_id in metadata['newsdata']['type'][f'{prov_id}_{year}']:
+                for batch_id in metadata['newsdata']['batch'][f'{prov_id}_{year}_{major_id}']:
                     try:
                         res = intercepted_eol_request(
                             {
@@ -404,7 +403,7 @@ def get_minium_score_of_majors(univ: Univ, dictionary: dict[str, str], prov_dict
                                 'major_name': item['spname'],
                                 'enroll_level': data['item'][0]['local_batch_name'],
                                 'avg_score': item['average'],
-                                'minium_score_and_rank': '%s/%s' % (item['min'], item['min_section']),
+                                'minium_score_and_rank': f'{item["min"]}/{item["min_section"]}',
                                 'major_requirements': item['sp_info'],
                             }
                             ret_list.append(new_row)
@@ -447,25 +446,25 @@ def main():
                 '专业组',
                 '选科要求'
             ])
-        with open('min_score_%s.csv' % HASH, 'w', encoding='utf-8', newline='') as csvfile:
+        with open(f'min_score_{HASH}.csv', 'w', encoding='utf-8', newline='') as csvfile:
             csvwriter = csv.DictWriter(
                 csvfile, fieldnames=MiniumScoreForUnivs.__annotations__.keys()
             )
             csvwriter.writeheader()
             for univ in univ_list:
                 try:
-                    logging.info('正在获取%s分数线' % univ['name'])
+                    logging.info(f'正在获取{univ["name"]}分数线')
                     score_list = get_minium_score_of_univ(univ, dictionary)
                 except NetworkException:
-                    logging.fatal('获取%s的分数线时发生网络异常' % univ['name'])
+                    logging.fatal(f'获取{univ["name"]}的分数线时发生网络异常')
                     exit(1)
                 for score in score_list:
                     csvwriter.writerow(score)
                     if GENERATE_XLSX:
                         wb['学校分数线'].append([v for v in score.values()])
                 if GENERATE_XLSX:
-                    wb.save('data_%s.xlsx' % HASH)
-                logging.info('成功获取%s分数线信息' % univ['name'])
+                    wb.save(f'data_{HASH}.xlsx')
+                logging.info(f'成功获取{univ["name"]}分数线信息')
         logging.info('已获取全部高校分数线信息')
 
     if not NO_ENROLL_PLAN:
@@ -486,25 +485,25 @@ def main():
                 '学费',
                 '选科要求'
             ])
-        with open('enroll_plan_%s.csv' % HASH, 'w', encoding='utf-8', newline='') as csvfile:
+        with open(f'enroll_plan_{HASH}.csv', 'w', encoding='utf-8', newline='') as csvfile:
             csvwriter = csv.DictWriter(
                 csvfile, fieldnames=EnrollPlan.__annotations__.keys()
             )
             csvwriter.writeheader()
             for univ in univ_list:
                 try:
-                    logging.info('正在获取%s招生计划' % univ['name'])
+                    logging.info(f'正在获取{univ["name"]}招生计划')
                     plan_list = get_enroll_plan_of_majors(univ, dictionary)
                 except NetworkException:
-                    logging.fatal('获取%s的招生计划时发生网络异常' % univ['name'])
+                    logging.fatal(f'获取{univ["name"]}的招生计划时发生网络异常')
                     exit(1)
                 for plan in plan_list:
                     csvwriter.writerow(plan)
                     if GENERATE_XLSX:
                         wb['各专业招生计划'].append([v for v in plan.values()])
                 if GENERATE_XLSX:
-                    wb.save('data_%s.xlsx' % HASH)
-                logging.info('成功获取%s招生计划信息' % univ['name'])
+                    wb.save(f'data_{HASH}.xlsx')
+                logging.info(f'成功获取{univ["name"]}招生计划信息')
         logging.info('已获取全部高校招生计划信息')
 
     if not NO_MAJOR_SCORE:
@@ -524,24 +523,24 @@ def main():
                 '最低分/最低位次',
                 '选科要求'
             ])
-        with open('major_score_%s.csv' % HASH, 'w', encoding='utf-8', newline='') as csvfile:
+        with open(f'major_score_{HASH}.csv', 'w', encoding='utf-8', newline='') as csvfile:
             csvwriter = csv.DictWriter(
                 csvfile, fieldnames=MiniumScoreForMajors.__annotations__.keys()
             )
             csvwriter.writeheader()
             for univ in univ_list:
                 try:
-                    logging.info('正在获取%s各专业分数线' % univ['name'])
+                    logging.info(f'正在获取{univ["name"]}各专业分数线')
                     major_score = get_minium_score_of_majors(univ, dictionary)
                 except NetworkException:
-                    logging.fatal('获取%s的各专业分数线时发生网络异常' % univ['name'])
+                    logging.fatal(f'获取{univ["name"]}的各专业分数线时发生网络异常')
                     exit(1)
                 for score in major_score:
                     csvwriter.writerow(score)
                     wb['分专业录取分数线'].append([v for v in score.values()])
                 if GENERATE_XLSX:
-                    wb.save('data_%s.xlsx' % HASH)
-                logging.info('成功获取%s各专业分数线信息' % univ['name'])
+                    wb.save(f'data_{HASH}.xlsx')
+                logging.info(f'成功获取{univ["name"]}各专业分数线信息')
         logging.info('已获取全部高校各专业分数线信息')
 
     logging.info('已成功爬取所有数据')
