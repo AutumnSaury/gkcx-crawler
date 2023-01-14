@@ -1,12 +1,13 @@
-import copy
 import math
 import requests
 import csv
 import logging
 import time
-import hashlib
-import random
 import openpyxl
+from functions.hash import generate_random_hash
+from exceptions import NetworkException
+from functions.intercepted_requests import intercepted_eol_request
+from functions.session import session
 from type import *
 
 NO_UNIV_SCORE = False  # 是否不查询分数线
@@ -16,7 +17,7 @@ PAGE_RANGE = []  # 大学列表页数范围
 ITEM_OFFSET = 0  # 起始位置偏移，或者说从起始页的第n + 1个大学开始查询，只能为非负值
 YEAR_SINCE = 2020  # 数据起始年份
 QUERY_INTERVAL = 10  # 每次查询的间隔，单位为秒，低于10的值可能导致IP暂时被封
-PROVINCE = '河南'  # 大学所在的省份，可以参考下面的PROVIENCE_DICT填写
+PROVINCE = '北京'  # 大学所在的省份，可以参考下面的PROVIENCE_DICT填写
 GENERATE_XLSX = True  # 是否生成xlsx文件
 
 # region 但是这是碰都不能碰的Region
@@ -61,11 +62,6 @@ PROVIENCE_DICT = {  # 数字ID（行政区划代码）到省份名的映射，�
 REV_PROVIENCE_DICT = {v: k for k, v in PROVIENCE_DICT.items()}
 
 
-def generate_random_hash() -> str:
-    """生成随机的8位hash"""
-    return hashlib.md5(str(random.random()).encode()).hexdigest()[:8]
-
-
 HASH = generate_random_hash()  # 本次运行的HASH，用于标识CSV批次
 
 logging.basicConfig(
@@ -75,83 +71,14 @@ logging.basicConfig(
 )
 
 
-class NetworkException(Exception):
-    """发生网络错误时抛的异常"""
-    pass
-
-
 def load_dictionary() -> dict[str, str]:
     """加载用于渲染表格的字典"""
     try:
-        res = requests.get(
+        res = session.get(
             'https://static-data.gaokao.cn/www/2.0/config/dicprovince/dic.json')
     except requests.exceptions.RequestException:
         raise NetworkException('加载字典时发生网络错误')
     return res.json()['data']
-
-
-def intercepted_eol_request(payload: dict, retry_interval=120) -> EolResponseData:
-    """向eol.cn的接口发送请求"""
-    logging.debug('正在向eol.cn发送请求')
-
-    def send_request(payload):
-        return requests.post('https://api.eol.cn/web/api/',
-                             headers={
-                                 'accept': 'application/json, text/plain, */*',
-                                 'content-type': 'application/json;charset=UTF-8',
-                                 'user-agent': 'Mozilla/5.0'
-                             },
-                             json=payload)
-
-    # region 嗯造拦截器
-    retries: int = 0
-    data: requests.Response | None = None
-    while True:
-        data = send_request(payload)
-        body: EolResponse = data.json()
-        code = body['code']
-
-        logging.debug(f'响应代码：{code}')
-
-        if code == '0000':
-            """正常"""
-            if retries > 0:
-                logging.info(f'第{retries}次重试成功')
-            break
-
-        if code == '1069':
-            """被限速"""
-            retries += 1
-            logging.warning(f'请求频率过高，{retry_interval}秒后进行第{retries}次重试')
-            time.sleep(retry_interval)
-            continue
-
-        if code == '1090':
-            """响应体大小超出限制"""
-            logging.warning('响应体大小超出限制，处理中')
-            modified_payload = copy.deepcopy(payload)
-            modified_payload['size'] = payload['size'] // 2
-            modified_payload['page'] = (payload['page'] - 1) * 2 + 1
-
-            time.sleep(QUERY_INTERVAL)
-            page_1 = intercepted_eol_request(modified_payload)
-
-            modified_payload['page'] += 1
-
-            time.sleep(QUERY_INTERVAL)
-            page_2 = intercepted_eol_request(modified_payload)
-
-            page_1['item'] += page_2['item']
-            logging.info('处理完成')
-            return page_1
-
-        # 上边的if一个都没匹配到的话会跑到这里来
-        logging.fatal(f'未知错误：{code}')
-        logging.fatal(body['message'])
-        raise NetworkException('请求失败')
-    # endregion
-
-    return body['data']
 
 
 def get_univ_list(prov: str, rev_prov_dict: dict[str, int] = REV_PROVIENCE_DICT) -> list[Univ]:
@@ -204,7 +131,7 @@ def get_minium_score_of_univ(univ: Univ, dictionary: dict[str, str], prov_dict: 
     """获取高校各省各年份分数线"""
     school_id = univ['school_id']
     try:
-        res = requests.get(
+        res = session.get(
             f'https://static-data.gaokao.cn/www/2.0/school/{school_id}/dic/provincescore.json'
         )
         if res.status_code == 404:
@@ -223,7 +150,7 @@ def get_minium_score_of_univ(univ: Univ, dictionary: dict[str, str], prov_dict: 
         for year in year_list:
             for major_id in metadata['newsdata']['type'][f'{prov_id}_{year}']:
                 try:
-                    res = requests.get(
+                    res = session.get(
                         f'https://static-data.gaokao.cn/www/2.0/schoolprovinceindex/{year}/{school_id}/{prov_id}/{major_id}/1.json')
                     if res.status_code != 200:
                         raise NetworkException('网络错误')
@@ -254,7 +181,7 @@ def get_enroll_plan_of_majors(univ: Univ, dictionary: dict[str, str], prov_dict:
     """获取高校招生计划"""
     school_id = univ['school_id']
     try:
-        res = requests.get(
+        res = session.get(
             f'https://static-data.gaokao.cn/www/2.0/school/{school_id}/dic/specialplan.json'
         )
         if res.status_code == 404:
@@ -335,7 +262,7 @@ def get_minium_score_of_majors(univ: Univ, dictionary: dict[str, str], prov_dict
     """获取高校专业分数线"""
     school_id = univ['school_id']
     try:
-        res = requests.get(
+        res = session.get(
             f'https://static-data.gaokao.cn/www/2.0/school/{school_id}/dic/specialscore.json'
         )
         if res.status_code == 404:
