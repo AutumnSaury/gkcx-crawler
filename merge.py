@@ -3,7 +3,7 @@ import openpyxl
 import csv as _csv
 from type import MiniumScoreForUnivs, EnrollPlan, MiniumScoreForMajors
 from typing import TypedDict, cast
-from main import HASH
+from functions.hash import generate_random_hash
 
 
 class Form(TypedDict):
@@ -71,6 +71,8 @@ NAME_DICT = {
     'enroll': '各专业招生计划',
     'major': '分专业录取分数线'
 }
+
+HASH = generate_random_hash()
 
 
 @click.command('merge', help='合并多个CSV或XLSX文件，也可用于转换表格格式')
