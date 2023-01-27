@@ -49,8 +49,9 @@ def intercepted_eol_request(payload: dict, retry_interval=120) -> EolResponseDat
             """响应体大小超出限制"""
             logging.warning('响应体大小超出限制，处理中')
             modified_payload = copy.deepcopy(payload)
-            modified_payload['size'] = payload['size']
-            modified_payload['page'] = (payload['page'] - 1) * 2 + 1
+
+            modified_payload['size'] = payload['size'] // 3  # 10
+            modified_payload['page'] = (payload['page'] - 1) * 3 + 1
 
             time.sleep(QUERY_INTERVAL)
             page_1 = intercepted_eol_request(modified_payload)
@@ -61,6 +62,13 @@ def intercepted_eol_request(payload: dict, retry_interval=120) -> EolResponseDat
             page_2 = intercepted_eol_request(modified_payload)
 
             page_1['item'] += page_2['item']
+            modified_payload['page'] += 1
+
+            time.sleep(QUERY_INTERVAL)
+            page_3 = intercepted_eol_request(modified_payload)
+
+            page_1['item'] += page_3['item']
+
             logging.info('处理完成')
             return page_1
 
