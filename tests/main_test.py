@@ -71,5 +71,10 @@ class XyqczyTestCase(UnivTestCase):
     univ_name = '襄阳汽车职业技术学院'
 
 
+class NeauTestCase(UnivTestCase):
+    """东北农业大学，响应体大小超出限制，拆分后仍有问题"""
+    univ_name = '东北农业大学'
+
+
 if __name__ == '__main__':
     unittest.main()
