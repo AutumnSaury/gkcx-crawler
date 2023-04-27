@@ -17,9 +17,9 @@ class Form(TypedDict):
 
 
 HEADERS = (
-    'code,name,located_province,target_province,major,year,enroll_level,enroll_type,minium_score_and_rank,prov_minium_score,major_group,major_requirements',  # 省分数线
-    'code,name,located_province,target_province,year,major,enroll_level,major_name,planned_number,duration,tuition,major_requirements',  # 招生计划
-    'code,name,located_province,target_province,year,major,major_name,enroll_level,avg_score,minium_score_and_rank,major_requirements'  # 专业分数线
+    'code,name,located_province,target_province,major,year,enroll_level,enroll_type,minium_score,minium_rank,prov_minium_score,major_group,subject_requirements',  # 省分数线
+    'code,name,located_province,target_province,year,major,enroll_level,major_name,planned_number,duration,tuition,major_group,subject_requirements',  # 招生计划
+    'code,name,located_province,target_province,year,major,major_name,enroll_level,avg_score,minium_score,minium_rank,major_group,subject_requirements'  # 专业分数线
 )
 
 READABLE_HEADERS = {
@@ -32,7 +32,8 @@ READABLE_HEADERS = {
         '年份',
         '录取批次',
         '招生类型',
-        '最低分/最低位次',
+        '最低分',
+        '最低位次',
         '省控线',
         '专业组',
         '选科要求'
@@ -49,6 +50,7 @@ READABLE_HEADERS = {
         '计划招生',
         '学制',
         '学费',
+        '专业组'
         '选科要求'
     ],
     'major': [
@@ -61,7 +63,9 @@ READABLE_HEADERS = {
         '录取专业名称',
         '录取批次',
         '平均分',
-        '最低分/最低位次',
+        '最低分',
+        '最低位次',
+        '专业组',
         '选科要求'
     ]
 }
@@ -179,7 +183,7 @@ def merge(csv: list[str], xlsx: list[str], type: str, remove_empty_lines: bool):
                     writer.writerows(v)
     elif type == 'xlsx':
         wb = openpyxl.Workbook()
-        wb.remove(wb.active)
+        wb.remove(wb.active)  # type: ignore
         for k, v in form.items():
             if v:
                 v = cast(list, v)

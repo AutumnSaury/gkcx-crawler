@@ -167,10 +167,11 @@ def get_minium_score_of_univ(univ: Univ, dictionary: dict[str, str], prov_dict: 
                         'year': year,
                         'enroll_level': item['local_batch_name'],
                         'enroll_type': item['zslx_name'],
-                        'minium_score_and_rank': f'{item["min"]}/{item["min_section"]}',
+                        'minium_score': item["min"],
+                        'minium_rank': item["min_section"],
                         'prov_minium_score': item['proscore'],
-                        'major_group': item['sg_name'],
-                        'major_requirements': item['sg_info']
+                        'major_group': item['sg_name'] or None,
+                        'subject_requirements': item['sg_info'] or None
                     }
                     ret_list.append(new_row)
 
@@ -251,7 +252,8 @@ def get_enroll_plan_of_majors(univ: Univ, dictionary: dict[str, str], prov_dict:
                                 'planned_number': item['num'],
                                 'duration': item['length'],
                                 'tuition': item['tuition'],
-                                'major_requirements': item['sp_info'],
+                                'major_group': item['sg_name'] or None,
+                                'subject_requirements': item['sg_info'] or None,
                             }
                             ret_list.append(new_row)
 
@@ -330,8 +332,10 @@ def get_minium_score_of_majors(univ: Univ, dictionary: dict[str, str], prov_dict
                                 'major_name': item['spname'],
                                 'enroll_level': data['item'][0]['local_batch_name'],
                                 'avg_score': item['average'],
-                                'minium_score_and_rank': f'{item["min"]}/{item["min_section"]}',
-                                'major_requirements': item['sp_info'],
+                                'minium_score': item["min"],
+                                'minium_rank': item["min_section"],
+                                'major_group': item['sg_name'] or None,
+                                'subject_requirements': item['sg_info'] or None
                             }
                             ret_list.append(new_row)
     return ret_list
@@ -353,7 +357,7 @@ def main():
         exit(1)
 
     wb = openpyxl.Workbook()
-    wb.remove(wb.active)
+    wb.remove(wb.active)  # type: ignore
 
     if not NO_UNIV_SCORE:
         logging.info('开始获取高校各省分数线')
@@ -368,7 +372,8 @@ def main():
                 '年份',
                 '录取批次',
                 '招生类型',
-                '最低分/最低位次',
+                '最低分',
+                '最低位次',
                 '省控线',
                 '专业组',
                 '选科要求'
@@ -410,6 +415,7 @@ def main():
                 '计划招生',
                 '学制',
                 '学费',
+                '专业组',
                 '选科要求'
             ])
         with open(f'enroll_plan_{HASH}.csv', 'w', encoding='utf-8', newline='') as csvfile:
@@ -447,7 +453,9 @@ def main():
                 '录取专业名称',
                 '录取批次',
                 '平均分',
-                '最低分/最低位次',
+                '最低分',
+                '最低位次',
+                '专业组',
                 '选科要求'
             ])
         with open(f'major_score_{HASH}.csv', 'w', encoding='utf-8', newline='') as csvfile:

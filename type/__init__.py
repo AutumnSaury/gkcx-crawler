@@ -82,13 +82,15 @@ class MiniumScoreForUnivs(TypedDict):
     """录取批次"""
     enroll_type: str
     """招生类型"""
-    minium_score_and_rank: str
-    """最低分/最低位次"""
+    minium_score: int
+    """最低分"""
+    minium_rank: int
+    """最低位次"""
     prov_minium_score: str
     """省控线"""
     major_group: Optional[str]
     """专业组，非新高考省份无此值"""
-    major_requirements: Optional[str]
+    subject_requirements: Optional[str]
     """选科要求，非新高考省份无此值"""
 
 
@@ -116,7 +118,9 @@ class EnrollPlan(TypedDict):
     """学制"""
     tuition: str
     """学费"""
-    major_requirements: Optional[str]
+    major_group: Optional[str]
+    """专业组"""
+    subject_requirements: Optional[str]
     """选科要求"""
 
 
@@ -140,9 +144,13 @@ class MiniumScoreForMajors(TypedDict):  # Docstring是这么用的吗，写起�
     """招生批次"""
     avg_score: str
     """平均分"""
-    minium_score_and_rank: str
-    """最低分/最低位次"""
-    major_requirements: Optional[str]
+    minium_score: int
+    """最低分"""
+    minium_rank: int
+    """最低位次"""
+    major_group: Optional[str]
+    """专业组，非新高考省份无此值"""
+    subject_requirements: Optional[str]
     """选科要求，非新高考省份无此值"""
 
 # endregion
